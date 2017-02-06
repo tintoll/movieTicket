@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Ticket</title>
+    <style>
+        .line {
+            overflow: hidden;
+        }
+        .seat {
+            margin: 2px;
+            float: left;
+            width : 30px;
+            height : 30px;
+            border-radius: 3px;
+        }
+        .enable {
+            background: gray;
+        }
+
+        .enable:hover {
+            background: black;
+        }
+        .disable {
+            background: red;
+        }
+    </style>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io.connect();
+        socket.on('reserve',function (data) {
+           var $target = $('div[data-x='+data.x+'][data-y='+data.y+']');
+           $target.removeClass('enable');
+           $target.addClass('disable');
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            var onClickSeat = function () {
+                var x = $(this).attr('data-x');
+                var y = $(this).attr('data-y');
+                if(confirm('좌석을 예약하시겠습니까?')) {
+                    $(this).off('click');
+                    socket.emit('reserve',{
+                       x: x,
+                       y: y
+                    });
+                } else {
+                    alert('취소되었습니다.');
+                }
+            }
+            //IE에서는 같은URL을 연속적으로 요청하면 이전에 불러온 데이터를 제공하여 현재시간을 기반으로URL을
+            //매번 다른 형태로 전달하는 것입니다.
+
+            $.getJSON('/seats', {dummy:new Date().getTime()}, function (data) {
+
+                //좌석 생성
+                $.each(data, function (indexY, line) {
+                    //문서 객체 생성
+                    var $line = $('<div></div>').addClass('line');
+                    $.each(line, function (indexX, seat) {
+                        //문서 객체를 생성하고 변수 $line에 추가합니다.
+                        var $output = $('<div></div>', {
+                            'class':'seat',
+                            'data-x':indexX,
+                            'data-y':indexY,
+                        }).appendTo($line);
+                        if(seat == 1) {
+                            //좌석이 비어있으면 enable 클래스와 click리스너를 추가합니다.
+                            $output.addClass('enable').on('click',onClickSeat);
+                        } else if(seat == 2) {
+                            //좌석이 사용불가능하면 disable 클래스를 추가
+                            $output.addClass('disable');
+                        }
+                    })
+
+                    //문서객체를 추가
+                    $line.appendTo('body');
+                });
+            });
+
+        });
+    </script>
+</head>
+<body>
+
+</body>
+</html>
